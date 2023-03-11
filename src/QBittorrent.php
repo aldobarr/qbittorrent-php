@@ -23,7 +23,9 @@ namespace AldoBarr;
 use AldoBarr\QBittorrent\Application;
 use AldoBarr\QBittorrent\Contracts\Api;
 use AldoBarr\QBittorrent\Log;
+use AldoBarr\QBittorrent\Sync;
 use AldoBarr\QBittorrent\Torrent;
+use AldoBarr\QBittorrent\Transfer;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
@@ -40,7 +42,7 @@ class QBittorrent implements Api {
 	protected string $version;
 	protected bool $authenticated = false;
 
-	public function __construct(string $url, int $port, string $username, string $password) {
+	public function __construct(string $url, int $port, string $username, string $password, bool $http_errors = false) {
 		$parsed_url = parse_url($url);
 		if (empty($parsed_url['scheme']) || empty($parsed_url['host'])) {
 			throw new \AldoBarr\QBittorrent\Exceptions\InvalidUriException('Invalid URL');
@@ -50,8 +52,7 @@ class QBittorrent implements Api {
 		$this->password = $password;
 
 		$qbt = &$this;
-		$stack = new HandlerStack;
-		$stack->setHandler(new CurlHandler);
+		$stack = HandlerStack::create();
 		$stack->push(Middleware::mapRequest(function(RequestInterface $request) use (&$qbt) {
 			$path = $request->getUri()->getPath();
 			if (strcmp(substr($path, -10), 'auth/login') === 0 || strcmp(substr($path, -11), 'auth/logout') === 0) {
@@ -67,7 +68,7 @@ class QBittorrent implements Api {
 
 		$this->client = new Client([
 			'cookies' => true,
-			'http_errors' => false,
+			'http_errors' => $http_errors,
 			'handler' => $stack,
 			'base_uri' => $parsed_url['scheme'] . '://' . $parsed_url['host'] . ':' . $port . '/api/v2/'
 		]);
@@ -141,7 +142,13 @@ class QBittorrent implements Api {
 	}
 
 	public function request(string $endpoint, string $method = 'GET', array $options = []): ResponseInterface {
+		unset($options['cookies']);
 		return $this->client->request($method, $endpoint, $options);
+	}
+
+	public function sync(): Sync {
+		$sync = new Sync;
+		return $this->cloneApiObject($sync);
 	}
 
 	public function torrents(array $options = []): array {
@@ -160,9 +167,18 @@ class QBittorrent implements Api {
 		return $torrent;
 	}
 
+	public function transfer(): Transfer {
+		$transfer = new Transfer;
+		return $this->cloneApiObject($transfer);
+	}
+
 	private function &cloneApiObject(Api &$new_object): Api {
 		$options = array_keys(get_object_vars($this));
 		foreach ($options as $option) {
+			if (strcmp($option, 'prefix') === 0) {
+				continue;
+			}
+
 			$new_object->{$option} = &$this->{$option};
 		}
 

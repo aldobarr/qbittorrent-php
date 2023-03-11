@@ -11,11 +11,15 @@ class Torrent extends QBittorrent {
 
 	protected function __construct() {}
 
-	protected function setHash(string $hash) {
+	protected function setHash(string $hash): void {
 		$this->hash = $hash;
 	}
 
-	public function files(string $indexes = ''): ?array {
+	public function getHash(): string {
+		return $this->hash;
+	}
+
+	public function files(string $indexes = ''): array {
 		$options = ['query' => ['hash' => $this->hash]];
 		if (!empty($indexes)) {
 			$options['query']['indexes'] = $indexes;
@@ -27,6 +31,10 @@ class Torrent extends QBittorrent {
 		$body->close();
 
 		return $data;
+	}
+
+	public function peers(int $rid = 0): object {
+		return $this->sync()->torrentPeers($this->getHash(), $rid);
 	}
 
 	public function renameFile(string $old_path, string $new_path): ResponseInterface {

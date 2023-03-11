@@ -9,14 +9,16 @@ class Log extends QBittorrent {
 
 	protected function __construct() {}
 
-	public function main(bool $normal = true, bool $info = true, bool $warning = true, bool $critical = true, int $last_known_id = -1): ?array {
-		$response = $this->client->get($this->prefix . 'main', ['query' => [
-			'normal' => $normal ? 'true' : 'false',
-			'info' => $info ? 'true' : 'false',
-			'warning' => $warning ? 'true' : 'false',
-			'critical' => $critical ? 'true' : 'false',
-			'last_known_id' => $last_known_id
-		]]);
+	public function main(bool $normal = true, bool $info = true, bool $warning = true, bool $critical = true, int $last_known_id = -1): array {
+		$response = $this->client->get($this->prefix . 'main', [
+			'query' => [
+				'normal' => $normal ? 'true' : 'false',
+				'info' => $info ? 'true' : 'false',
+				'warning' => $warning ? 'true' : 'false',
+				'critical' => $critical ? 'true' : 'false',
+				'last_known_id' => $last_known_id
+			]
+		]);
 
 		$body = $response->getBody();
 		$data = json_decode($body->getContents());
@@ -25,10 +27,12 @@ class Log extends QBittorrent {
 		return $data;
 	}
 
-	public function peers(int $last_known_id = -1): ?array {
-		$response = $this->client->get($this->prefix . 'main', ['query' => [
-			'last_known_id' => $last_known_id
-		]]);
+	public function peers(int $last_known_id = -1): array {
+		$response = $this->client->get($this->prefix . 'main', [
+			'query' => [
+				'last_known_id' => $last_known_id
+			]
+		]);
 
 		$body = $response->getBody();
 		$data = json_decode($body->getContents());
