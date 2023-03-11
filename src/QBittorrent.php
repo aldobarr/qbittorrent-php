@@ -151,7 +151,25 @@ class QBittorrent implements Api {
 		return $this->cloneApiObject($sync);
 	}
 
-	public function torrents(array $options = []): array {
+	public function torrents(
+		?string $filter = null,
+		?string $category = null,
+		?string $tag = null,
+		?string $sort = null,
+		?bool $reverse = null,
+		?int $limit = null,
+		?int $offset = null,
+		?string $hashes = null
+	): array {
+		$options = [];
+		$ref = new \ReflectionMethod($this, 'torrents');
+		foreach ($ref->getParameters() as $param) {
+			$value = ${$param->name};
+			if (!is_null($value)) {
+				$options[$param->name] = $value;
+			}
+		}
+
 		$response = $this->client->get('torrents/info', ['query' => $options]);
 		$body = $response->getBody();
 		$data = json_decode($body->getContents());

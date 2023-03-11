@@ -37,6 +37,24 @@ class Torrent extends QBittorrent {
 		return $this->sync()->torrentPeers($this->getHash(), $rid);
 	}
 
+	public function properties(): object {
+		$response = $this->client->get($this->prefix . 'files', [
+			'query' => [
+				'hash' => $this->hash
+			]
+		]);
+
+		if ($response->getStatusCode() === 404) {
+			return (object)[];
+		}
+
+		$body = $response->getBody();
+		$data = json_decode($body->getContents());
+		$body->close();
+
+		return $data;
+	}
+
 	public function renameFile(string $old_path, string $new_path): ResponseInterface {
 		return $this->client->post($this->prefix . 'renameFile', [
 			'form_params' => [

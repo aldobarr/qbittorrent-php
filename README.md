@@ -61,6 +61,7 @@ $torrent = $qbt->torrent($hash);
 This torrent object may then interact with the torrent API. To get a list of all torrents use the `torrents` method:
 
 ```php
+// Note: `torrents/info` is implemented in the base qbittorrent class instead of the Torrent class
 $torrents = $qbt->torrents();
 foreach ($torrents as $torrent_data) {
 	$torrent = $qbt->torrent($torrent_data->hash);
