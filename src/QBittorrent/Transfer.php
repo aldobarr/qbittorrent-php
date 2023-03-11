@@ -10,6 +10,16 @@ class Transfer extends QBittorrent {
 
 	protected function __construct() {}
 
+	public function banPeers(string $peers): bool {
+		$response = $this->client->post($this->prefix . 'banPeers', [
+			'form_params' => [
+				'peers' => $peers
+			]
+		]);
+
+		return $response->getStatusCode() === 200;
+	}
+
 	public function downloadLimit(): int {
 		$response = $this->client->get($this->prefix . 'downloadLimit');
 		$body = $response->getBody();
@@ -42,6 +52,20 @@ class Transfer extends QBittorrent {
 		return $response->getStatusCode() === 200;
 	}
 
+	public function setUploadLimit(int $limit): bool {
+		if ($limit < 0) {
+			throw new InvalidArgumentException('The limit must be a positive integer or 0.');
+		}
+
+		$response = $this->client->post($this->prefix . 'setUploadLimit', [
+			'form_params' => [
+				'limit' => $limit
+			]
+		]);
+
+		return $response->getStatusCode() === 200;
+	}
+
 	public function speedLimitsMode(): bool {
 		$response = $this->client->get($this->prefix . 'speedLimitsMode');
 		$body = $response->getBody();
@@ -54,5 +78,14 @@ class Transfer extends QBittorrent {
 	public function toggleSpeedLimitsMode(): bool {
 		$response = $this->client->post($this->prefix . 'toggleSpeedLimitsMode');
 		return $response->getStatusCode() === 200;
+	}
+
+	public function uploadLimit(): int {
+		$response = $this->client->get($this->prefix . 'uploadLimit');
+		$body = $response->getBody();
+		$data = json_decode($body->getContents());
+		$body->close();
+
+		return $data;
 	}
 }
