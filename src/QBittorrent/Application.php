@@ -2,17 +2,12 @@
 
 namespace AldoBarr\QBittorrent;
 
-use GuzzleHttp\Client;
+use AldoBarr\QBittorrent;
 
-class Application {
-	private Client $client;
-	private string $prefix = 'app/';
-	private bool $authenticated;
+class Application extends QBittorrent {
+	protected string $prefix = 'app/';
 
-	public function __construct(Client $client, bool &$authenticated) {
-		$this->client = $client;
-		$this->authenticated = &$authenticated;
-	}
+	protected function __construct() {}
 
 	public function version(): string {
 		try {
@@ -61,9 +56,40 @@ class Application {
 		$response = $this->client->post($this->prefix . 'shutdown');
 		$success = $response->getStatusCode() === 200;
 		if ($success) {
-			$this->authenticated = false;
+			$this->setAuthenticated(false);
 		}
 
 		return $success;
+	}
+
+	public function preferences(): object {
+		$response = $this->client->get($this->prefix . 'preferences');
+		$body = $response->getBody();
+		$data = json_decode($body->getContents());
+		$body->close();
+
+		return $data;
+	}
+
+	public function setPreferences(object $preferences): bool {
+		$body = 'json=' . json_encode($preferences);
+		$response = $this->client->post($this->prefix . 'setPreferences', [
+			'headers' => [
+				'Content-Type' => 'application/x-www-form-urlencoded',
+				'Content-Length' => strlen($body)
+			],
+			'body' => $body
+		]);
+
+		return $response->getStatusCode() === 200;
+	}
+
+	public function getDefaultSavePath(): string {
+		$response = $this->client->get($this->prefix . 'defaultSavePath');
+		$body = $response->getBody();
+		$path = $body->getContents();
+		$body->close();
+
+		return $path;
 	}
 }

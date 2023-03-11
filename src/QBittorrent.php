@@ -1,22 +1,44 @@
 <?php
 
+/**
+ *  qbittorrent-php - PHP QBittorrent API Wrapper
+ *  Copyright (C) 2023  Aldo Barreras
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 namespace AldoBarr;
 
 use AldoBarr\QBittorrent\Application;
+use AldoBarr\QBittorrent\Contracts\Api;
+use AldoBarr\QBittorrent\Log;
 use AldoBarr\QBittorrent\Torrent;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
-class QBittorrent {
-	public const MIN_API_VERSION = '2.8.3';
+class QBittorrent implements Api {
+	public const API_VERSION_SUPPORT = '2.8.3';
 
-	private Client $client;
-	private string $username;
-	private string $password;
-	private bool $authenticated = false;
+	protected Client $client;
+	protected string $username;
+	protected string $password;
+	protected string $version;
+	protected bool $authenticated = false;
 
 	public function __construct(string $url, int $port, string $username, string $password) {
 		$parsed_url = parse_url($url);
@@ -54,21 +76,9 @@ class QBittorrent {
 			throw new \AldoBarr\QBittorrent\Exceptions\AuthFailedException('Unable to login to qbittorrent api');
 		}
 
-		try {
-			$version = $this->application()->apiVersion();
-			if (empty($version)) {
-				throw new \Exception;
-			} else if (!version_compare($version, self::MIN_API_VERSION, '>=')) {
-				throw new \Exception($version);
-			}
-		} catch (\Throwable $t) {
-			$version = $t->getMessage();
-			$msg = 'Your version of the qbittorrent WebAPI is not supported';
-			if (!empty($version)) {
-				$msg = "Your version of the qbittorrent WebAPI ({$version}) is lower than the minimum supported version of " . self::MIN_API_VERSION;
-			}
-
-			throw new \AldoBarr\QBittorrent\Exceptions\InvalidVersionException($msg);
+		$this->version = $this->application()->apiVersion();
+		if (empty($this->version)) {
+			throw new \AldoBarr\QBittorrent\Exceptions\InvalidVersionException('Your version of the qbittorrent WebAPI is not supported');
 		}
 	}
 
@@ -121,7 +131,17 @@ class QBittorrent {
 	}
 
 	public function application(): Application {
-		return new Application($this->client, $this->authenticated);
+		$application = new Application;
+		return $this->cloneApiObject($application);
+	}
+
+	public function log(): Log {
+		$log = new Log;
+		return $this->cloneApiObject($log);
+	}
+
+	public function request(string $method = 'GET', string $endpoint, array $options): ResponseInterface {
+		return $this->client->request($method, $endpoint, $options);
 	}
 
 	public function torrents(array $options = []): array {
@@ -134,6 +154,18 @@ class QBittorrent {
 	}
 
 	public function torrent(string $hash): Torrent {
-		return new Torrent($this->client, $hash);
+		$torrent = new Torrent;
+		$this->cloneApiObject($torrent);
+		$torrent->setHash($hash);
+		return $torrent;
+	}
+
+	private function &cloneApiObject(Api &$new_object): Api {
+		$options = array_keys(get_object_vars($this));
+		foreach ($options as $option) {
+			$new_object->{$option} = &$this->{$option};
+		}
+
+		return $new_object;
 	}
 }

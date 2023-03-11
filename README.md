@@ -18,4 +18,4 @@ $ composer require aldobarr/qbittorrent-php
 ```
 
 ## License
-Licensed under the GNU General Public License version 3
+This php API wrapper is open-sourced software licensed under the [GNU General Public License version 3](https://opensource.org/license/gpl-3-0/).

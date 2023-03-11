@@ -2,16 +2,16 @@
 
 namespace AldoBarr\QBittorrent;
 
-use GuzzleHttp\Client;
+use AldoBarr\QBittorrent;
 use Psr\Http\Message\ResponseInterface;
 
-class Torrent {
-	private Client $client;
-	private string $hash;
-	private string $prefix = 'torrents/';
+class Torrent extends QBittorrent {
+	protected string $hash;
+	protected string $prefix = 'torrents/';
 
-	public function __construct(Client $client, string $hash) {
-		$this->client = $client;
+	protected function __construct() {}
+
+	protected function setHash(string $hash) {
 		$this->hash = $hash;
 	}
 
