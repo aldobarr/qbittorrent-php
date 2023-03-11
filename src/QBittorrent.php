@@ -140,7 +140,7 @@ class QBittorrent implements Api {
 		return $this->cloneApiObject($log);
 	}
 
-	public function request(string $method = 'GET', string $endpoint, array $options): ResponseInterface {
+	public function request(string $endpoint, string $method = 'GET', array $options = []): ResponseInterface {
 		return $this->client->request($method, $endpoint, $options);
 	}
 
