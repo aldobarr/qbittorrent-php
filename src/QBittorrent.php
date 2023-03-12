@@ -92,7 +92,7 @@ class QBittorrent implements Api {
 
 	public function addTorrent(
 		?array $urls = null,
-		?array $local_file_paths = null,
+		?array $file_paths = null,
 		?string $save_path = null,
 		?string $cookie = null,
 		?string $category = null,
@@ -108,8 +108,8 @@ class QBittorrent implements Api {
 		bool $auto_tmm = false,
 		bool $sequantial_download = false,
 		bool $first_last_piece_prio = false
-	) {
-		if (empty($urls) && empty($local_file_paths)) {
+	): bool {
+		if (empty($urls) && empty($file_paths)) {
 			return true;
 		}
 
@@ -143,19 +143,14 @@ class QBittorrent implements Api {
 			];
 		}
 
-		if (!empty($local_file_paths)) {
-			foreach ($local_file_paths as $name => $path) {
-				$file = [
+		if (!empty($file_paths)) {
+			foreach ($file_paths as $name => $path) {
+				$form_data[] = [
 					'name' => 'torrents',
-					'contents' => Utils::tryFopen($path, 'r'),
+					'filename' => is_int($name) ? basename($path) : $name,
+					'contents' => Utils::tryFopen(trim($path), 'r'),
 					'headers' => ['Content-Type' => 'application/x-bittorrent']
 				];
-
-				if (!is_int($name)) {
-					$file['filename'] = $name;
-				}
-
-				$form_data[] = $file;
 			}
 		}
 

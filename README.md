@@ -73,5 +73,21 @@ foreach ($torrents as $torrent_data) {
 
 For more information on available API methods, see the main [QBittorrent WebUI Api documentation](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)).
 
+## Adding a New Torrent
+
+To add a new torrent use the `addTorrent` method of the QBittorrent class. This class supports all the parameters [documented](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent).
+All of the parameters are optional, however if both `$urls` and `$file_paths` are empty, then the method immediately returns false.
+Both `$urls` and `$file_paths` accept an array of values for adding torrents. The `$file_paths` parameter accepts an array
+of paths to try and send the binary file data to the qbittorrent api. `$file_paths` may also optionally be a key => value pair where the key
+is the name to specify for the file.
+
+```php
+$qbt = new QBittorrent(...);
+$qbt->addTorrent(file_paths: [
+	'files1.torrent' => '/home/user/files1.torrent',
+	'files2.torrent' => '/home/user2/some/path/files2.torrent'
+]);
+```
+
 ## License
 This php API wrapper is open-sourced software licensed under the [GNU General Public License version 3](https://opensource.org/license/gpl-3-0/).
