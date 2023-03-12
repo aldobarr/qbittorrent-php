@@ -30,6 +30,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -87,6 +88,119 @@ class QBittorrent implements Api {
 		if (!$this->logout()) {
 			throw new \AldoBarr\QBittorrent\Exceptions\AuthFailedException('Unable to logout of qbittorrent api');
 		}
+	}
+
+	public function addTorrent(
+		?array $urls = null,
+		?array $local_file_paths = null,
+		?string $save_path = null,
+		?string $cookie = null,
+		?string $category = null,
+		bool $skip_checking = false,
+		bool $paused = false,
+		?array $tags = null,
+		?bool $root_folder = null,
+		?string $rename = null,
+		?int $up_limit = null,
+		?int $down_limit = null,
+		?float $ratio_limit = null,
+		?int $seeding_time_limit = null,
+		bool $auto_tmm = false,
+		bool $sequantial_download = false,
+		bool $first_last_piece_prio = false
+	) {
+		if (empty($urls) && empty($local_file_paths)) {
+			return true;
+		}
+
+		$form_data = [
+			[
+				'name' => 'skip_checking',
+				'contents' => $skip_checking ? 'true' : 'false'
+			],
+			[
+				'name' => 'paused',
+				'contents' => $paused ? 'true' : 'false'
+			],
+			[
+				'name' => 'autoTMM',
+				'contents' => $auto_tmm ? 'true' : 'false'
+			],
+			[
+				'name' => 'sequentialDownload',
+				'contents' => $sequantial_download ? 'true' : 'false'
+			],
+			[
+				'name' => 'firstLastPiecePrio',
+				'contents' => $first_last_piece_prio ? 'true' : 'false'
+			],
+		];
+
+		if (!empty($urls)) {
+			$form_data[] = [
+				'name' => 'urls',
+				'contents' => implode("\n", array_map('trim', $urls))
+			];
+		}
+
+		if (!empty($local_file_paths)) {
+			foreach ($local_file_paths as $name => $path) {
+				$file = [
+					'name' => 'torrents',
+					'contents' => Utils::tryFopen($path, 'r'),
+					'headers' => ['Content-Type' => 'application/x-bittorrent']
+				];
+
+				if (!is_int($name)) {
+					$file['filename'] = $name;
+				}
+
+				$form_data[] = $file;
+			}
+		}
+
+		if (!empty($save_path)) {
+			$form_data[] = ['name' => 'savepath', 'contents' => $save_path];
+		}
+
+		if (!empty($cookie)) {
+			$form_data[] = ['name' => 'cookie', 'contents' => $cookie];
+		}
+
+		if (!empty($category)) {
+			$form_data[] = ['name' => 'category', 'contents' => $category];
+		}
+
+		if (!empty($tags)) {
+			$form_data[] = ['name' => 'tags', 'contents' => implode(',', $tags)];
+		}
+
+		if (!is_null($root_folder)) {
+			$form_data[] = ['name' => 'root_folder', 'contents' => $root_folder ? 'true' : 'false'];
+		}
+
+		if (!empty($rename)) {
+			$form_data[] = ['name' => 'rename', 'contents' => $rename];
+		}
+
+		if (!is_null($up_limit)) {
+			$form_data[] = ['name' => 'upLimit', 'contents' => $up_limit];
+		}
+
+		if (!is_null($down_limit)) {
+			$form_data[] = ['name' => 'dlLimit', 'contents' => $down_limit];
+		}
+
+		if (!is_null($ratio_limit)) {
+			$form_data[] = ['name' => 'ratioLimit', 'contents' => $ratio_limit];
+		}
+
+		if (!is_null($seeding_time_limit)) {
+			$form_data[] = ['name' => 'seedingTimeLimit', 'contents' => $seeding_time_limit];
+		}
+
+		$response = $this->client->post('torrents/add', ['multipart' => $form_data]);
+		return $response->getStatusCode() === 200;
 	}
 
 	public function isLoggedIn() {
